@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPT Model for SysML v2</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f5f5 0%, #e0eafc 100%);
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .chat-container {
+            width: 100%;
+            max-width: 1000px; /* Keep it within screen bounds */
+            height: 95vh; /* Extend to cover full height */
+            border-radius: 8px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #000000; /* Black header */
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+        }
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #e9effb;
+            display: flex;
+            flex-direction: column;
+        }
+        .chat-message {
+            margin-bottom: 15px;
+            padding: 15px 20px;
+            border-radius: 12px;
+            max-width: 100%; /* Limit message width to container */
+            word-wrap: break-word;
+            white-space: pre-wrap; /* Ensure that text wraps properly */
+            background-color: white; /* Ensure the message container is white */
+        }
+        .chat-message.user {
+            background-color: #007aff;
+            color: white;
+            align-self: flex-end;
+        }
+        .chat-message.bot {
+            background-color: #f1f1f1;
+            color: #333;
+            align-self: flex-start;
+        }
+        .chat-input {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-top: 1px solid #ddd;
+            background-color: #fff;
+        }
+        .chat-input textarea {
+            flex: 1;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 8px;
+            background-color: #f1f1f1;
+            resize: none;
+            outline: none;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .chat-input button {
+            border: none;
+            background-color: #007aff;
+            color: #fff;
+            padding: 12px 20px;
+            margin-left: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .chat-input button:hover {
+            background-color: #006add;
+        }
+        .chat-box::-webkit-scrollbar {
+            width: 8px;
+        }
+        .chat-box::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 10px;
+        }
+        .chat-box::-webkit-scrollbar-track {
+            background-color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="header">
+            GPT Model for SysML v2
+        </div>
+        <div class="chat-box">
+            <div class="chat-message bot">Hello! Ask me anything, and I will respond as ChatGPT.</div>
+        </div>
+        <div class="chat-input">
+            <textarea rows="1" placeholder="Type your message..." oninput="autoGrow(this)"></textarea>
+            <button type="button">Send</button>
+        </div>
+    </div>
+
+    <script>
+        function autoGrow(element) {
+            element.style.height = "auto";
+            element.style.height = (element.scrollHeight) + "px";
+        }
+
+        document.querySelector('button').addEventListener('click', function() {
+            const textarea = document.querySelector('textarea');
+            const messageText = textarea.value.trim();
+
+            if (messageText) {
+                // Add user message to chat box
+                const chatBox = document.querySelector('.chat-box');
+                const userMessage = document.createElement('div');
+                userMessage.classList.add('chat-message', 'user');
+                userMessage.textContent = messageText;
+                chatBox.appendChild(userMessage);
+
+                // Clear textarea and reset height
+                textarea.value = '';
+                textarea.style.height = 'auto';
+
+                // Scroll chat box to bottom
+                chatBox.scrollTop = chatBox.scrollHeight;
+
+                // Send message to backend and receive response
+                fetch('/api/ask', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ question: messageText }),
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    const botMessage = document.createElement('div');
+                    botMessage.classList.add('chat-message', 'bot');
+
+                    // Create a <pre> element for the bot's response to preserve formatting
+                    const preElement = document.createElement('pre');
+                    preElement.style.whiteSpace = 'pre-wrap'; // Ensure it wraps correctly
+                    preElement.textContent = data.answer;
+
+                    botMessage.appendChild(preElement);
+                    chatBox.appendChild(botMessage);
+
+                    // Scroll to the bottom of the chat box
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    const botMessage = document.createElement('div');
+                    botMessage.classList.add('chat-message', 'bot');
+                    botMessage.textContent = 'Sorry, there was an error processing your request.';
+                    chatBox.appendChild(botMessage);
+                });
+            }
+        });
+    </script>
+</body>
+</html>
